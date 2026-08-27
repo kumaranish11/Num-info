@@ -1,20 +1,13 @@
-import os
-import duckdb
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-
-# Set DuckDB extension directory to a writable location
-os.environ['DUCKDB_EXTENSION_DIRECTORY'] = '/tmp/duckdb_extensions'
+import duckdb
 
 app = FastAPI()
 
 con = duckdb.connect()
-# Install and load httpfs (this will download the extension to /tmp)
 con.execute("INSTALL httpfs;")
 con.execute("LOAD httpfs;")
-
-# ... (the rest of your code: LANDING_PAGE_HTML, exception handler, endpoints)
 
 LANDING_PAGE_HTML = """
 <!DOCTYPE html>
