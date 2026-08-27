@@ -122,50 +122,55 @@ def fetch_data(Number: str = Query(None)):
                 "Developer": "@Maybechx"
             }
         )
-    
+
     last_digit = Number[-1]
-    
     primary_url = f"https://huggingface.co/datasets/CutehackX/hitek-data-bucket/resolve/main/final_master_shard_{last_digit}.parquet"
     alt_url = f"https://huggingface.co/datasets/CutehackX/hitek-data-bucket/resolve/main/alt_master_shard_{last_digit}.parquet"
-    
+
     try:
         query = f"""
             SELECT *, 'Main' AS _record_type FROM read_parquet('{primary_url}') WHERE mobile = '{Number}'
             UNION ALL
             SELECT *, 'Alt' AS _record_type FROM read_parquet('{alt_url}') WHERE alt = '{Number}'
         """
-        
-        raw_results = con.execute(query).df().to_dict(orient="records")
-        
+
+        # Execute and fetch rows without pandas
+        result = con.execute(query)
+        rows = result.fetchall()
+        columns = [desc[0] for desc in result.description]  # get column names
+
+        # Build list of dicts
+        raw_results = [dict(zip(columns, row)) for row in rows]
+
         main_records = []
         alt_records = []
-        
+
         for row in raw_results:
             rec_type = row.pop('_record_type')
             if rec_type == 'Main':
                 main_records.append(row)
             else:
                 alt_records.append(row)
-        
+
         if not main_records and not alt_records:
             return JSONResponse(
                 status_code=404,
                 content={
-                    "status": "not_found", 
+                    "status": "not_found",
                     "phone": Number,
                     "Developer": "@Maybechx"
                 }
             )
-            
+
         return {
-            "status": "success", 
+            "status": "success",
             "Data": {
                 "Main_Records": main_records,
                 "Alt_Records": alt_records
             },
             "Developer": "@Maybechx"
         }
-        
+
     except Exception as e:
         return JSONResponse(
             status_code=500,
